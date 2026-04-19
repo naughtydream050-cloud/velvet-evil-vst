@@ -1,0 +1,83 @@
+name: Build VELVET EVIL VST3
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    name: Windows x64 VST3
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache JUCE
+        uses: actions/cache@v4
+        with:
+          path: build/_deps
+          key: juce-7.0.12-win-${{ hashFiles('CMakeLists.txt') }}
+          restore-keys: juce-7.0.12-win-
+
+      - name: Configure
+        run: cmake -B build -A x64 -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --config Release --parallel
+
+      - name: Find VST3
+        id: find-vst3
+        run: |
+          $vst3 = Get-ChildItem -Recurse -Filter "*.vst3" build | Select-Object -First 1
+          if (-not $vst3) { Write-Error "VST3 not found"; exit 1 }
+          echo "VST3_PATH=$($vst3.FullName)" >> $env:GITHUB_OUTPUT
+
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: VELVET-EVIL-VST3-Windows
+          path: ${{ steps.find-vst3.outputs.VST3_PATH }}
+          if-no-files-found: error
+          retention-days: 30
+
+  build-macos:
+    name: macOS VST3
+    runs-on: macos-latest
+    if: false
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache JUCE
+        uses: actions/cache@v4
+        with:
+          path: build/_deps
+          key: juce-7.0.12-mac-${{ hashFiles('CMakeLists.txt') }}
+          restore-keys: juce-7.0.12-mac-
+
+      - name: Configure
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --config Release --parallel
+
+      - name: Find VST3
+        id: find-vst3
+        run: |
+          vst3=$(find build -name "*.vst3" -maxdepth 6 | head -1)
+          if [ -z "$vst3" ]; then echo "VST3 not found"; exit 1; fi
+          echo "VST3_PATH=$vst3" >> $GITHUB_OUTPUT
+
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: VELVET-EVIL-VST3-macOS
+          path: ${{ steps.find-vst3.outputs.VST3_PATH }}
+          if-no-files-found: error
+          retention-days: 30
