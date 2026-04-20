@@ -60,3 +60,33 @@ quad_boot.ps1               → 全エンジン疎通確認のみ
 
 ---
 *ECC Trust: 知見スコア 0.1–1.0 | 更新: 工程完了時*
+
+---
+
+## オーケストレーション規約 v1.1（更新: 2026-04-20）
+*Post-Mortem #01 の知見を反映*
+
+### [絶対座標主義]
+- 「中央付近」「だいたいここ」等の曖昧な座標指定を**禁止**する
+- すべての配置は以下の数学的確定コードを優先すること:
+  ```cpp
+  // 推奨パターン
+  auto bounds = getLocalBounds();
+  comp.setBounds(bounds.withSizeKeepingCentre(w, h));
+  comp.setCentrePosition(bounds.getCentreX(), targetY);
+  ```
+- ハードコード数値を使う場合は必ず Stitch 解析の px 値をコメントで併記すること:
+  `wobbleKnob.setBounds(48, 118, 150, 150); // Stitch: center(123,193)`
+
+### [アセット優先描画]
+- `paint()` 内の手書きテクスチャ（亀裂・錆・グラデーション）を**禁止**する
+- 背景・テクスチャ・アイコン類はすべて PNG → BinaryData に組み込み `drawImageAt()` で描画すること
+- 実装順序: 「PNG 用意 → CMakeLists に juce_add_binary_data → BinaryData::xxx_png 参照」
+- やむを得ず手書きする場合は 10 行以内に収め、コメントで「BinaryData 移行予定」を明記
+
+### [リソース・ガードレール]
+- コンピューター使用（screenshot / mouse click）を起動する前に、**必ず**以下を実行すること:
+  1. 「現在のコードと理想画像の差分」をテキストで箇条書きリスト化
+  2. 「残り修正ターン数: N」を自己宣言（N ≤ 2）
+  3. 宣言なしの screenshot 実行は規約違反とし、オーケストレーターはそのターンを無効化する
+- セッション生成は「1タスク = 1セッション」原則。同一目的での重複セッション生成を禁止する
