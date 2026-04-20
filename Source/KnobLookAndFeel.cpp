@@ -24,24 +24,29 @@ void KnobLookAndFeel::drawRotarySlider(
     g.setColour(juce::Colour(0xFFFF2200));
     g.fillEllipse(ix - 3.0f, iy - 3.0f, 6.0f, 6.0f);
 
-    // LED arc — 7 o'clock to 5 o'clock, red→green gradient
-    const float outerR = 72.0f;
-    const float innerR = 60.0f;
-    const float arcR   = (innerR + outerR) * 0.5f;
-    const float currentAngle = startAng + sliderPos * (endAng - startAng);
-    const int numLEDs = 28;
-
+    // LED ARC: Green->Yellow->Orange
+    const float outerR  = 68.0f;
+    const float innerR  = 56.0f;
+    const float curAng  = startAng + sliderPos * (endAng - startAng);
+    const int   numLEDs = 30;
     for (int i = 0; i < numLEDs; ++i) {
-        const float t        = (float)i / (numLEDs - 1);
-        const float ledAngle = startAng + t * (endAng - startAng);
-        const bool  lit      = ledAngle <= currentAngle;
-        const float hue      = lit ? t * 0.33f : 0.0f;
-        const float sat      = lit ? 1.0f : 0.1f;
-        const float bri      = lit ? 0.85f : 0.08f;
-        const juce::Colour ledCol = juce::Colour::fromHSL(hue, sat, bri, 1.0f);
-        const float lx = x + width  * 0.5f + std::cos(ledAngle) * arcR;
-        const float ly = y + height * 0.5f + std::sin(ledAngle) * arcR;
-        g.setColour(ledCol);
-        g.fillEllipse(lx - 3.5f, ly - 3.5f, 7.0f, 7.0f);
+        const float t     = (float)i / (float)(numLEDs - 1);
+        const float angle = startAng + t * (endAng - startAng);
+        const bool  lit   = angle <= curAng;
+        const float hue   = lit ? (0.33f - t * 0.25f) : 0.0f;
+        const float sat   = lit ? 1.0f : 0.15f;
+        const float bri   = lit ? 0.80f : 0.07f;
+        const auto  col   = juce::Colour::fromHSL(hue, sat, bri, 1.0f);
+        const float midR  = (innerR + outerR) * 0.5f;
+        const float lx    = cx + std::cos(angle) * midR;
+        const float ly    = cy + std::sin(angle) * midR;
+        if (lit) {
+            g.setColour(col.withAlpha(0.25f));
+            g.fillEllipse(lx - 5.5f, ly - 5.5f, 11.0f, 11.0f);
+            g.setColour(col.withAlpha(0.6f));
+            g.fillEllipse(lx - 3.5f, ly - 3.5f, 7.0f, 7.0f);
+        }
+        g.setColour(col);
+        g.fillEllipse(lx - 2.5f, ly - 2.5f, 5.0f, 5.0f);
     }
 }
