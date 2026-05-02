@@ -1,7 +1,7 @@
 #pragma once
 #include <JuceHeader.h>
 #include "PluginProcessor.h"
-#include "KnobLookAndFeel.h"
+#include "ImageKnob.h"
 
 class VelvetEvilEditor : public juce::AudioProcessorEditor {
 public:
@@ -12,9 +12,8 @@ public:
 
 private:
     VelvetEvilProcessor& proc;
-    KnobLookAndFeel knobLAF;
-    juce::Slider wobbleKnob { juce::Slider::RotaryVerticalDrag, juce::Slider::NoTextBox };
-    juce::Slider reverbKnob { juce::Slider::RotaryVerticalDrag, juce::Slider::NoTextBox };
+    ImageKnob wobbleKnob;
+    ImageKnob reverbKnob;
     juce::AudioProcessorValueTreeState::SliderAttachment wobbleAttach, reverbAttach;
     juce::TextButton selectButton { "SELECT" };
     juce::String currentPresetName { "SANCTUARY" };
