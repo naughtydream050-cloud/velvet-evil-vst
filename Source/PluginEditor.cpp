@@ -1,4 +1,5 @@
 #include "PluginEditor.h"
+#include <BinaryData.h>
 
 VelvetEvilEditor::VelvetEvilEditor(VelvetEvilProcessor& p)
     : AudioProcessorEditor(&p), proc(p),
@@ -6,107 +7,40 @@ VelvetEvilEditor::VelvetEvilEditor(VelvetEvilProcessor& p)
       reverbAttach(p.apvts, "reverb", reverbKnob)
 {
     setSize(420, 420);
-    wobbleKnob.setLookAndFeel(&knobLAF);
-    reverbKnob.setLookAndFeel(&knobLAF);
+
+    auto img = juce::ImageCache::getFromMemory(BinaryData::image_0_png, BinaryData::image_0_pngSize);
+    wobbleKnob.setKnobImage(img);
+    reverbKnob.setKnobImage(img);
+
     addAndMakeVisible(wobbleKnob);
     addAndMakeVisible(reverbKnob);
     addAndMakeVisible(selectButton);
+
     selectButton.setColour(juce::TextButton::buttonColourId,  juce::Colour(0xFF1A1008));
     selectButton.setColour(juce::TextButton::textColourOffId, juce::Colour(0xFFAA8866));
+
     selectButton.onClick = [this] {
         proc.selectNextPreset();
         currentPresetName = proc.kPresets[proc.currentPreset].name;
         repaint();
     };
+
     clipPollTimer = std::make_unique<ClipTimer>(*this);
     clipPollTimer->startTimer(80);
 }
 
 VelvetEvilEditor::~VelvetEvilEditor() {
-    wobbleKnob.setLookAndFeel(nullptr);
-    reverbKnob.setLookAndFeel(nullptr);
     clipPollTimer->stopTimer();
 }
 
 void VelvetEvilEditor::paint(juce::Graphics& g)
 {
-    const int W = getWidth();
-    const int H = getHeight();
-
-    // Background: dark cracked metal
     g.fillAll(juce::Colour(0xFF080505));
-    juce::ColourGradient radGrad(juce::Colour(0xFF1A0A08), W*0.5f, H*0.5f,
-                                  juce::Colour(0xFF040202), 0.0f, 0.0f, true);
-    g.setGradientFill(radGrad);
-    g.fillRect(0, 0, W, H);
-
-    // Scratch lines
-    g.setColour(juce::Colour(0x228B0000));
-    for (int i = 0; i < 12; ++i)
-        g.drawLine((float)(i*38-20), 0.f, (float)(i*38+60), (float)H, 0.6f);
-    g.setColour(juce::Colour(0x15CC2200));
-    for (int i = 0; i < 8; ++i)
-        g.drawLine(0.f, (float)(i*55), (float)W, (float)(i*55+30), 0.4f);
-
-    // Corner rust
-    g.setColour(juce::Colour(0x40660000));
-    g.fillEllipse(-30, -30, 100, 100);
-    g.fillEllipse(W-70, -30, 100, 100);
-    g.fillEllipse(-30, H-70, 100, 100);
-    g.fillEllipse(W-70, H-70, 100, 100);
-
-    // Title bar
-    g.setColour(juce::Colour(0xFF330A0A));
-    g.fillRect(0, 0, W, 58);
-    g.setColour(juce::Colour(0xFF550000));
-    g.fillRect(0, 56, W, 2);
-
-    // Title
-    g.setColour(juce::Colour(0xFFCC1111));
-    g.setFont(juce::Font(24.0f, juce::Font::bold));
-    g.drawText("VELVET EVIL", 0, 8, W, 28, juce::Justification::centred);
-    g.setColour(juce::Colour(0xFF663333));
-    g.setFont(juce::Font(10.0f, juce::Font::italic));
-    g.drawText("~ FIND YOURSELVES ~", 0, 36, W, 16, juce::Justification::centred);
-
-    // Knob labels
-    g.setColour(juce::Colour(0xFFCCBBAA));
-    g.setFont(juce::Font(11.0f, juce::Font::bold));
-    g.drawText("DARK MELODY",  48, 278, 160, 16, juce::Justification::centred);
-    g.drawText("GRIT",        212, 278, 160, 16, juce::Justification::centred);
-
-    // Clip LEDs
-    const bool lc = proc.isLeftClipping();
-    const bool rc = proc.isRightClipping();
-    g.setColour(lc ? juce::Colour(0xFFFF3300) : juce::Colour(0xFF1A0808));
-    g.fillEllipse(8.f, 8.f, 10.f, 10.f);
-    g.setColour(rc ? juce::Colour(0xFFFF3300) : juce::Colour(0xFF1A0808));
-    g.fillEllipse((float)(W-18), 8.f, 10.f, 10.f);
-    if (lc || rc) proc.resetClipLEDs();
-
-    // LCD
-    g.setColour(juce::Colour(0xFF0D0804));
-    g.fillRoundedRectangle(60.f, 308.f, 300.f, 38.f, 4.f);
-    g.setColour(juce::Colour(0xFF332211));
-    g.drawRoundedRectangle(60.f, 308.f, 300.f, 38.f, 4.f, 1.f);
-    g.setColour(juce::Colour(0xFFFFAA00));
-    g.setFont(juce::Font(16.0f, juce::Font::bold));
-    g.drawText(currentPresetName, 60, 308, 300, 38, juce::Justification::centred);
-
-    // Bottom bar
-    g.setColour(juce::Colour(0xFF330A0A));
-    g.fillRect(0, 356, W, H-356);
-    g.setColour(juce::Colour(0xFF550000));
-    g.fillRect(0, 356, W, 1);
-
-    // Bottom right indicator
-    g.setColour(juce::Colour(0xFF663322));
-    g.fillEllipse((float)(W-22), 362.f, 12.f, 12.f);
 }
 
 void VelvetEvilEditor::resized()
 {
-    wobbleKnob.setBounds(48,  118, 150, 150);
-    reverbKnob.setBounds(222, 118, 150, 150);
-    selectButton.setBounds(12, 360, 85, 26);
+    wobbleKnob.setBounds(48,118,150,150);
+    reverbKnob.setBounds(222,118,150,150);
+    selectButton.setBounds(12,360,85,26);
 }
