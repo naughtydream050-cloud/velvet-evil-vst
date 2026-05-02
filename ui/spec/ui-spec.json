@@ -1,0 +1,6 @@
+{
+  "canvas": { "width": 420, "height": 420 },
+  "palette": {},
+  "controls": {},
+  "notes": "SSOT. Populate via tools/extract_ui_spec.py and OpenCV measurement."
+}
