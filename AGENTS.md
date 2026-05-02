@@ -142,3 +142,71 @@ PR を上げる前に、以下を満たすこと:
 - CI失敗時は最大3回まで自律修復を試みた、または外注判断が明記されている
 
 以上により、Codex は自らのコードをテスト空間（Harness）で叩き上げ、完璧な状態に近づけてから PR を上げる自律ユニットとして稼働する。
+
+---
+
+## 8. CODE ACCEPTANCE GATE v1.0 (9+採用ゲート)
+
+コード生成・修正案・リファクタ案は、PR化または採用前に必ず 10 点満点で自己評価すること。採点は主観的な好みではなく、検証可能な品質指標として扱う。
+
+### 8.1 採用基準
+- **9.0〜10.0: 採用可。** PRに進めてよい。ただし検証手段とSTATE更新は必須。
+- **7.0〜8.9: 条件付き保留。** 追加修正、Harness Loop、または局所リファクタを行い、9.0以上に引き上げること。
+- **0.0〜6.9: 破棄。** PR化してはならない。破棄理由を短く記録し、別案を生成すること。
+
+### 8.2 評価軸
+各軸を 0〜10 で評価し、最低点・平均点・致命的欠陥の有無を確認する。
+
+| Axis | 評価内容 |
+| :--- | :--- |
+| Correctness | 要件を満たし、明確なバグがないか |
+| Buildability | CMake / JUCE / CI 上で通る見込みが高いか |
+| JUCE Compatibility | JUCE 7 API、BinaryData、APVTS、LookAndFeel運用が正しいか |
+| Realtime Safety | `processBlock` 内で allocation / lock / heavy work を避けているか |
+| UI Fidelity | Stitch / ui-spec / 正円主義 / 画像ノブ中心軸を守っているか |
+| Maintainability | Magic Numberを避け、命名・分離・SSOTが保たれているか |
+| Verification | テスト、CLI、スクショ差分、静的チェックなど検証方法が明示されているか |
+| Brand Fit | Dark-Core / Krump-Style / Razor Face / 正円主義に反しないか |
+
+### 8.3 Gate Rule
+以下のいずれかに該当する場合、平均点が9.0以上でも不採用とする。
+- ビルド不能が明白
+- `processBlock` に重い処理・ロック・動的確保を入れる
+- UIノブで正円または中心回転を破壊する
+- `AGENTS.md` / `STATE.md` / `docs/blueprint.md` のSSOT運用を壊す
+- main直pushを前提にする
+- 検証手段が存在しない
+
+### 8.4 Harnessとの接続
+7.0〜8.9 の案は、最大3回まで Harness Loop で改善する。3回後も9.0に届かない場合は破棄、または Debug.CI / Jules 外注判断に回す。
+
+0.0〜6.9 の案は改善対象ではなく破棄対象とする。低品質案に時間を使わない。
+
+### 8.5 blueprintへの結晶化
+9.0以上で採用したパターンは、再利用価値がある場合 `docs/blueprint.md` に ECC Finding として記録する。
+
+破棄した案でも、再発しやすい失敗パターンの場合は Anti-Pattern として記録する。
+
+記録例:
+
+```md
+## ECC Finding: ImageKnob center-locked rotation
+- Score: 9.4
+- Context: JUCE image knob rendering
+- Root Cause: transparent padding and non-square destination bounds cause axis drift
+- Successful Fix: center-crop source image, draw into square bounds, rotate around square center
+- Reuse Rule: all image knobs must use ImageKnob or equivalent square-preserving rotation
+```
+
+### 8.6 PRテンプレート義務
+PR本文には以下を必ず含めること。
+
+```md
+## Code Acceptance Gate
+- Score: [x.x/10]
+- Decision: Adopted / Held / Rejected
+- Verification: [commands, CI, screenshot diff, static review]
+- Risk: [known risk or none]
+```
+
+このゲートにより、Codex は「多く作る」のではなく、「9点以上だけを採用する」開発体制へ移行する。
