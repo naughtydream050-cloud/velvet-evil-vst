@@ -66,3 +66,79 @@
 例:
 - "@codex QUAD-BOOT 起動。ターゲット：buck-rage-vst。フェーズ1を開始せよ。" → Stitch.Capture + Stitch.Draft 実行
 - "@codex QUAD-BOOT 起動。ターゲット：buck-rage-vst。フェーズ3を開始せよ。" → Review.Logic 実行、CI.Watch 起動
+
+---
+
+## 7. HARNESS ENGINEERING PROTOCOL v1.0 (自律改善ハーネス)
+
+これより、Codex は単なるコード生成器ではなく、**自律的に実行・検証・修復を行う検証エンジン（Harness）**として稼働する。
+
+### 7.1 検証駆動サイクル (Validation-Driven Loop)
+コードを修正・生成した場合、必ず「それが設計通りに動くかを証明する手段」をセットで提示、または実行してログを取得する手順を前提とすること。
+
+検証手段の例:
+- CLI コマンド
+- GitHub Actions
+- CMake / build script
+- unit test / smoke test
+- UI screenshot diff
+- knob asset validator
+- JSON schema validation
+- static review checklist
+
+変更は「コード差分」だけで完了扱いしない。**検証方法・検証ログ・次の修復判断**までを作業単位とする。
+
+### 7.2 自律修復の権限 (Autonomous Self-Healing)
+CI の失敗やコンパイルエラーが発生した場合、司令塔（人間）に即時判断を仰ぐのではなく、エラーログから自律的に原因を推論し、最大3回まで自己修正（Self-Refine）を試みること。
+
+Harness Loop は以下を1サイクルとする:
+1. エラーログ末尾150行、または最小再現ログを読む
+2. 原因仮説を立てる
+3. 最小パッチを適用する
+4. 再検証する
+5. `STATE.md` に試行内容を記録する
+
+既知の原因例:
+- JUCE 7 API 仕様差分（FontOptions / Font constructor 等）
+- APVTS ParameterID / SliderAttachment 型不一致
+- BinaryData 名称不一致
+- CMake target_sources / binary_data 登録漏れ
+- processBlock 内の重い処理またはスレッド安全性違反
+- UI 正円主義違反（fillEllipse の幅・高さ不一致）
+
+### 7.3 知識の結晶化 (Knowledge Extraction)
+自律修復ループ内で問題が解決（Green）した場合、その「失敗の根本原因」と「成功したアプローチ」を必ず `docs/blueprint.md` に ECC Trust Score 付きで記録すること。
+
+記録形式:
+
+```md
+## ECC Finding: [短いタイトル]
+- Score: [1-10]
+- Context: [どのCI/PR/ファイルで発生したか]
+- Root Cause: [根本原因]
+- Successful Fix: [成功した修正]
+- Reuse Rule: [次回同じ問題を避ける規則]
+```
+
+同じエラーを二度繰り返すことは許されない。blueprint は単なるメモではなく、再発防止の知識ベースとして扱う。
+
+### 7.4 司令塔へのエスカレーション (Escalation Rule)
+3回の自律修復（Harness Loop）を経ても解決しない「地盤沈下レベルの複合的エラー」の場合のみ、ハーネスループを停止し、司令塔に対して Google Jules への外注チケット（Debug.CI）を発行して報告すること。
+
+Debug.CI チケットには以下を含める:
+- 対象リポジトリ / ブランチ / PR
+- エラー概要
+- 末尾150行のログ要約
+- 試行した3回の修復内容
+- 残存仮説
+- Jules に期待する修復範囲
+
+### 7.5 Harness Completion Criteria
+PR を上げる前に、以下を満たすこと:
+- 変更内容が AGENTS.md と QUAD-BOOT に合致している
+- 検証手段が明示されている
+- `STATE.md` が更新されている
+- 新しい知見がある場合 `docs/blueprint.md` に ECC Finding として結晶化されている
+- CI失敗時は最大3回まで自律修復を試みた、または外注判断が明記されている
+
+以上により、Codex は自らのコードをテスト空間（Harness）で叩き上げ、完璧な状態に近づけてから PR を上げる自律ユニットとして稼働する。
